@@ -1,0 +1,86 @@
+---
+title: "ST558 Project 2"
+author: "Daniel Dulaney & Jeremias Endrina"
+date: "October 30, 2021"
+output: 
+  rmarkdown::github_document:
+    toc: true
+    toc_depth: 1
+    pandoc_args: --webtex
+params:  
+    channel: "entertainment"
+---
+
+```{r setup, include=FALSE, message=FALSE}
+# set seed for reproducibility
+set.seed(558)
+
+# load necessary libraries
+library(rmarkdown)
+library(tidyverse)
+```  
+
+# Introduction  
+
+## Online News Popularity Data Set  
+With the unending developments of the internet, more and more people have access to online news articles. When people enjoys the article they read, they tend to share them through their social media accounts. Thus, the popularity of these articles can be associated to the number of times they are shared. In this project, we intend to find the best model that predicts the popularity of the online news using different techniques we learned in class.  
+
+The online news popularity data set that we will use is taken from the UCI Machine Learning Repository. The data comes from a popular online news [Mashable]('www.mashable.com'). There are 39644 articles, 58 predictive attributes, 2 non-predictive and 1 goal field.
+
+
+## Descriptions of Variables  
+As mentioned, there are 58 predictors and 1 response variables in the data set. Thus, there is a need to select the most important predictor variables to reduce noise in the model. Ren and Young (2015) of Stanford University in their [report]('http://cs229.stanford.edu/proj2015/328_report.pdf') used different ways to reduce such variables. Fisher criterion determined the top 20 predictors. In this project, we are adapting their method and using the variables they found more discriminative, see figure below.  
+
+```{r fscores, echo=FALSE}
+knitr::include_graphics("top20.png")
+```   
+
+But since we are reporting by type of channel, then we can only use 16 for channel variables will become irrelevant. Below is the list of variables that we will use and their corresponding descriptions.  
+
+1. kw_avg_avg: Avg. keyword (avg. shares)  
+2. LDA_02: Closeness to LDA topic 2  
+3. is_weekend: Was the article published on the weekend?  
+4. weekday_is_saturday: Was the article published on a Saturday?  
+5. LDA_04: Closeness to LDA topic 4  
+6. kw_max_avg: Avg. keyword (max. shares)  
+7. weekday_is_sunday: Was the article published on a Sunday?  
+8. LDA_00: Closeness to LDA topic 0  
+9. num_hrefs: Number of links  
+10. global_subjectivity: Text subjectivity  
+11. kw_min_avg: Avg. keyword (min. shares)  
+12. global_sentiment_polarity: Text sentiment polarity  
+13. rate_negative_words: Rate of negative words among non-neutral tokens  
+14. kw_min_min: Worst keyword (min. shares)  
+15. title_subjectivity: Title subjectivity  
+16. LDA_01: Closeness to LDA topic 1  
+
+
+## Purpose and Methods  
+
+In this project, we aim to find the best model among two linear regressions, random forest and  boosted tree model. Cross validation will be used in choosing the best model with the optimal tuning parameters. Lastly, all four models will be compared on the test set based on misclassification and accuracy rates.  
+
+
+
+# Data  
+## Reading in the Data  
+```{r warning=FALSE, message=FALSE}
+# read in data set
+data <- read_csv('OnlineNewsPopularity.csv') %>% select(-c(url,timedelta))
+
+# subset data set by channel (in this case channel=entertainment)
+# when we change the channel parameter, this data set will also change
+chanVar <- as.name(paste0("data_channel_is_", params$channel))
+chanData <- data %>% filter((!!sym(chanVar)) == 1)
+```
+
+# Summarizations  
+
+
+
+# Modeling  
+
+
+# Comparison  
+
+
+
