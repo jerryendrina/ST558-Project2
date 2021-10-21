@@ -87,9 +87,11 @@ variables <- c(6,18,24:26,35:39,40,42:44,48,55,59)
 chanData <- chanData[,variables]
 
 #set weekday_is_saturday, weekday_is_sunday and is_weekend as factors
-chanData$weekday_is_saturday <- as.factor(chanData$weekday_is_saturday)
-chanData$weekday_is_sunday <- as.factor(chanData$weekday_is_sunday)
-chanData$is_weekend <- as.factor(chanData$is_weekend)
+chanData$weekday_is_saturday <- as.factor(paste0('class', chanData$weekday_is_saturday))
+chanData$weekday_is_sunday <- as.factor(paste0('class', chanData$weekday_is_sunday))
+chanData$is_weekend <- as.factor(paste0('class', chanData$is_weekend))
+
+
 
 #split data set
 index <- createDataPartition(chanData$shares, p=0.7, list=F)
@@ -152,7 +154,7 @@ ggplot(train, aes(rate_negative_words, global_sentiment_polarity)) + geom_point(
        x="Rate Negative Words", y="Global Sentiment Polarity") 
 ```
 
-To Daniel: I we can add more plots especially those related to shares. Also boxplots of shares vs weekday_is_saturday, weekday_is_sunday and is_weekend for these three are categorical variables. Let me know what you think.
+To Daniel: We can add more plots especially those related to shares. Also boxplots of shares vs weekday_is_saturday, weekday_is_sunday and is_weekend for these three are categorical variables. Let me know what you think.
 
 
 # Modeling
@@ -172,15 +174,41 @@ jerryRMSE <- sqrt(mean((jerryPred-test$shares)^2))
 jerryRMSE
 ```
 
-## Random Forest Model (I still have to fix this, I always get an error. =( I'm waiting for Dr.Post's answer.))
+## Random Forest Model (I still have to fix this. I'm still waiting for Dr.Post's answer.))
 ```{r}
-ranForest <- train(shares ~., data = train, method = "rf",
-                   preProcess = c("center", "scale"),
-                   trainControl(method = "cv", number = 5),
-                   tuneGrid = data.frame(mtry=seq(1,10,1)))
+mod1 <- train(shares ~ ., data = train, method = "rf", 
+              preProc = c("center", "scale"), 
+              trControl = trainControl(method = "adaptive_cv", classProbs = TRUE, 
+                                       verboseIter = TRUE, 
+                                       adaptive = list(min = 5, alpha = 0.05, method = "BT",
+                                                       complete = TRUE)))
+
+mod1
+
+#calculate RMSE
+rfPred <- predict(mod1, newdata = test)
+round(postResample(pred = rfPred, obs = test$shares), 3)
+
+
 ```
 
+# Linear Modeling through Backwards Selection
+```{r}
+set.seed(10)
+ctrl <- rfeControl(functions = lmFuncs,
+                   method = "repeatedcv",
+                   repeats = 5,
+                   verbose = FALSE)
 
+lmProfile <- rfe(shares ~ ., preProc = c("center", "scale"),
+                 sizes = c(1:17),
+                 rfeControl = ctrl, data=train)
+
+lmProfile$results
+
+#calculate RMSE
+round(postResample(pred = lmPred, obs = test$shares), 3)
+```
 
 # Comparison  
 
