@@ -11,13 +11,14 @@ params:
     channel: "entertainment"
 ---
 
-```{r setup, include=FALSE, message=FALSE}
+```{r setup, include=FALSE, message=FALSE, echo=FALSE}
 # set seed for reproducibility
 set.seed(558)
 
 # load necessary libraries
 library(rmarkdown)
 library(tidyverse)
+library(caret)
 ```  
 
 # Introduction  
@@ -35,7 +36,7 @@ As mentioned, there are 58 predictors and 1 response variables in the data set. 
 knitr::include_graphics("top20.png")
 ```   
 
-But since we are reporting by type of channel, then we can only use 16 for channel variables will become irrelevant. Below is the list of variables that we will use and their corresponding descriptions.  
+But since we are reporting by type of channel, then we can only use 16 perdictor variables for channel variables will become irrelevant. Below is the list of variables that we will use and their corresponding descriptions.  
 
 1. kw_avg_avg: Avg. keyword (avg. shares)  
 2. LDA_02: Closeness to LDA topic 2  
@@ -54,18 +55,20 @@ But since we are reporting by type of channel, then we can only use 16 for chann
 15. title_subjectivity: Title subjectivity  
 16. LDA_01: Closeness to LDA topic 1  
 
+The response variable that we will try to predict using predictibe models will be:
+17. shares: Number of shares (target)  
+
 
 ## Purpose and Methods  
 
 In this project, we aim to find the best model among two linear regressions, random forest and  boosted tree model. Cross validation will be used in choosing the best model with the optimal tuning parameters. Lastly, all four models will be compared on the test set based on misclassification and accuracy rates.  
 
 
-
 # Data  
 ## Reading in the Data  
 ```{r warning=FALSE, message=FALSE}
 # read in data set
-data <- read_csv('OnlineNewsPopularity.csv') %>% select(-c(url,timedelta))
+data <- read_csv('OnlineNewsPopularity.csv') %>% dplyr::select(-c(url,timedelta))
 
 # subset data set by channel (in this case channel=entertainment)
 # when we change the channel parameter, this data set will also change
@@ -73,7 +76,48 @@ chanVar <- as.name(paste0("data_channel_is_", params$channel))
 chanData <- data %>% filter((!!sym(chanVar)) == 1)
 ```
 
+## Filtering and Splitting Data
+```{r}
+#set seed and variables to use
+set.seed(2)
+variables <- c(6,18,24:26,35:39,40,42:44,48,55,59)
+
+#split data set
+index <- createDataPartition(chanData$shares, p=0.7, list=F)
+train <- chanData[index, variables]
+test <- chanData[-index, variables]
+
+```
+
 # Summarizations  
+
+## Number of Channels
+In this portion, we will look at the number of different channels in the data set.
+```{r}
+channels <- data[,c(12:17)]
+counts <- data.frame(count = colSums(channels), 
+                     channel = c("Lifestyle","Entertainment","Business","Social Media",
+                                 "Technology", "World"))
+
+ggplot(counts, aes(x=channel, y=count)) + geom_col()
+
+```
+
+
+## Numeric Summaries
+We will only look at the five number summaries of the predictors with the top 5 highest Fisher scores. We will also include the response variable `shares`.
+```{r}
+sumVars <- c(5, 11, 8, 6, 12, 17)
+kable(summary(train[,sumVars]))
+```
+These summaries show measures center (mean and median) and spread (quantiles, min and max) of each variable.
+
+## Correlations
+```{r}
+correlation <- cor(train)
+correlation %>% corrplot()
+```
+Looking at the plot above, the t size and color of the circle indicate the correlation between two variables. The darker the blue is, the more positively correlated they are. While the darker red is, the more negatively correlated the variables will be.
 
 
 
