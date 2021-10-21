@@ -19,6 +19,8 @@ set.seed(558)
 library(rmarkdown)
 library(tidyverse)
 library(caret)
+library(knitr)
+library(corrplot)
 ```  
 
 # Introduction  
@@ -94,14 +96,22 @@ test <- chanData[-index, variables]
 ## Number of Channels
 In this portion, we will look at the number of different channels in the data set.
 ```{r}
+#generate dataframe of channels and its frequency
 channels <- data[,c(12:17)]
-counts <- data.frame(count = colSums(channels), 
-                     channel = c("Lifestyle","Entertainment","Business","Social Media",
-                                 "Technology", "World"))
+counts <- data.frame(Channel = c("Lifestyle","Entertainment","Business","Social Media",
+                                 "Technology", "World"), Frequency = colSums(channels))
 
-ggplot(counts, aes(x=channel, y=count)) + geom_col()
+#generate a contingency table
+rownames(counts) <- NULL
+kable(counts)
+
+#generate a plot 
+ggplot(counts, aes(x=Channel, y=Frequency)) + geom_col(fill="light blue") + 
+  labs(title = "Distribution of Channels") + geom_text(aes(label=Frequency))
+
 
 ```
+We can see from both contingency table and bar plot that the World Channel has the highest number of articles while Lifestyle Channel has the lowest number of articles.
 
 
 ## Numeric Summaries
@@ -110,15 +120,33 @@ We will only look at the five number summaries of the predictors with the top 5 
 sumVars <- c(5, 11, 8, 6, 12, 17)
 kable(summary(train[,sumVars]))
 ```
-These summaries show measures center (mean and median) and spread (quantiles, min and max) of each variable.
+These summaries show measures of center (mean and median) and measures of spread (quantiles, min and max) for each variable.
 
 ## Correlations
 ```{r}
 correlation <- cor(train)
 correlation %>% corrplot()
 ```
-Looking at the plot above, the t size and color of the circle indicate the correlation between two variables. The darker the blue is, the more positively correlated they are. While the darker red is, the more negatively correlated the variables will be.
+Looking at the plot above, the size and color of the circle indicate how strong the correlation between two variables are. The darker the blue is, the more positively correlated they are. While the darker the red is, the more negatively correlated the variables will be.
 
+We can show scatterplots of some of the pairs of variables such as `kw_avg_avg: Avg. keyword (avg. shares)` & `kw_max_avg: Avg. keyword (max. shares)` and  `rate_negative_words: Rate of negative words among non-neutral tokens` & `global_sentiment_polarity: Text sentiment polarity`.  
+```{r}
+#generate scatterplot of `kw_avg_avg` & `kw_max_avg``
+cor1 <- round(cor(train$kw_avg_avg, train$kw_max_avg), 3)
+ggplot(train, aes(kw_avg_avg, kw_max_avg)) + geom_point(color="blue") +
+  geom_text(x = 20000, y=1e+05, label= paste0("Correlation=", cor1), color="red") +
+    labs(title="Avg. Keyword (avg. shares) vs Avg. Keyword (max. shares) Plot",
+       x="Avg. Keyword (avg. shares)", y="Avg. Keyword (max. shares)") 
+
+#generate scatterplot of `rate_negative_words` & `global_sentiment_polarity`
+cor2 <- round(cor(train$rate_negative_words, train$global_sentiment_polarity), 3)
+ggplot(train, aes(rate_negative_words, global_sentiment_polarity)) + geom_point(color="blue") +
+  geom_text(x = 0.75, y=0.5, label= paste0("Correlation=", cor2), color="red") +
+    labs(title="Rate Negative Words vs Global Sentiment Polarity Plot",
+       x="Rate Negative Words", y="Global Sentiment Polarity") 
+```
+
+To Daniel: I think we can add more plots especially those related to shares.
 
 
 # Modeling  
