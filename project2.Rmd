@@ -21,6 +21,7 @@ library(tidyverse)
 library(caret)
 library(knitr)
 library(corrplot)
+library(leaps)
 ```  
 
 # Introduction  
@@ -83,12 +84,18 @@ chanData <- data %>% filter((!!sym(chanVar)) == 1)
 #set seed and variables to use
 set.seed(2)
 variables <- c(6,18,24:26,35:39,40,42:44,48,55,59)
+chanData <- chanData[,variables]
+
+#set weekday_is_saturday, weekday_is_sunday and is_weekend as factors
+chanData$weekday_is_saturday <- as.factor(chanData$weekday_is_saturday)
+chanData$weekday_is_sunday <- as.factor(chanData$weekday_is_sunday)
+chanData$is_weekend <- as.factor(chanData$is_weekend)
 
 #split data set
 index <- createDataPartition(chanData$shares, p=0.7, list=F)
-train <- chanData[index, variables]
-test <- chanData[-index, variables]
 
+train <- chanData[index, ]
+test <- chanData[-index, ]
 ```
 
 # Summarizations  
@@ -96,7 +103,7 @@ test <- chanData[-index, variables]
 ## Number of Channels
 In this portion, we will look at the number of different channels in the data set.
 ```{r}
-#generate dataframe of channels and its frequency
+#generate data frame of channels and its frequency
 channels <- data[,c(12:17)]
 counts <- data.frame(Channel = c("Lifestyle","Entertainment","Business","Social Media",
                                  "Technology", "World"), Frequency = colSums(channels))
@@ -108,23 +115,22 @@ kable(counts)
 #generate a plot 
 ggplot(counts, aes(x=Channel, y=Frequency)) + geom_col(fill="light blue") + 
   labs(title = "Distribution of Channels") + geom_text(aes(label=Frequency))
-
-
 ```
 We can see from both contingency table and bar plot that the World Channel has the highest number of articles while Lifestyle Channel has the lowest number of articles.
 
 
 ## Numeric Summaries
-We will only look at the five number summaries of the predictors with the top 5 highest Fisher scores. We will also include the response variable `shares`.
+We will only look at the five number summaries of the continuous predictors with the top 5 highest Fisher scores. We will also include the response variable `shares`.
 ```{r}
-sumVars <- c(5, 11, 8, 6, 12, 17)
+sumVars <- c(5, 11, 12, 4, 9, 17)
 kable(summary(train[,sumVars]))
 ```
 These summaries show measures of center (mean and median) and measures of spread (quantiles, min and max) for each variable.
 
 ## Correlations
+We can explore which variables are correlated to each other using the corrplot function. Categorical variables are not included in here.
 ```{r}
-correlation <- cor(train)
+correlation <- cor(train[, -c(6:8)])
 correlation %>% corrplot()
 ```
 Looking at the plot above, the size and color of the circle indicate how strong the correlation between two variables are. The darker the blue is, the more positively correlated they are. While the darker the red is, the more negatively correlated the variables will be.
@@ -146,10 +152,34 @@ ggplot(train, aes(rate_negative_words, global_sentiment_polarity)) + geom_point(
        x="Rate Negative Words", y="Global Sentiment Polarity") 
 ```
 
-To Daniel: I think we can add more plots especially those related to shares.
+To Daniel: I we can add more plots especially those related to shares. Also boxplots of shares vs weekday_is_saturday, weekday_is_sunday and is_weekend for these three are categorical variables. Let me know what you think.
 
 
-# Modeling  
+# Modeling
+
+## Jerry's Linear Regression (I still need to improve this cause I only get 7% adjR^2 which is weird.)
+```{r}
+#Jerry's linear regression modeling
+jerryFit <- lm(log(shares) ~ num_hrefs + kw_min_min + kw_min_avg + kw_max_avg +
+            kw_avg_avg + weekday_is_saturday + weekday_is_sunday +
+            global_subjectivity + rate_negative_words , data=chanData)
+summary(jerryFit)
+plot(jerryFit)
+
+#calculate RMSE
+jerryPred <- predict(jerryFit, newdata = test)
+jerryRMSE <- sqrt(mean((jerryPred-test$shares)^2))
+jerryRMSE
+```
+
+## Random Forest Model (I still have to fix this, I always get an error. =( I'm waiting for Dr.Post's answer.))
+```{r}
+ranForest <- train(shares ~., data = train, method = "rf",
+                   preProcess = c("center", "scale"),
+                   trainControl(method = "cv", number = 5),
+                   tuneGrid = data.frame(mtry=seq(1,10,1)))
+```
+
 
 
 # Comparison  
