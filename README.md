@@ -1,37 +1,29 @@
-## Welcome to GitHub Pages
+# Purpose
 
-You can use the [editor on GitHub](https://github.com/jerryendrina/ST558-Project2/edit/main/README.md) to maintain and preview the content for your website in Markdown files.
+In this repo, we analyze the rate at which certain news articles are shared, attempting to learn more about why some articles are shared more than others. We were especially interested in how this differed across six news categories: Lifestyle, Entertainment, Business, Social Media, Techonology, and World. 
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+To answer these questions, we first explore the data through plots and summary tables. Then, we build linear regression, random forest, and boosted tree models that predict how many times an article got shared based on 16 different inputs. Through these models, we learn how well the number of shares can be predicted, as well as which inputs lead to more shares.
 
-### Markdown
+# R Packages
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+In this project, we use several open-source packages:
 
-```markdown
-Syntax highlighted code block
+- `rmarkdown`: In order to render new .Rmd files
+- `tidyverse`: Collection of data wrangling & visualization packages
+- `caret`: For model building
+- `knitr`:
+- `corrplot`: Correlation plot
+- `leaps`:
+- `here`: Access files from current working directory with `here::here()`
+- `kableExtra`: Tables
 
-# Header 1
-## Header 2
-### Header 3
+# Links
 
-- Bulleted
-- List
+To create links to files, just reference the relative path. E.g. if we output the html
+files in the main directory can reference [this file](xyz.html)
 
-1. Numbered
-2. List
+- 
 
-**Bold** and _Italic_ and `Code` text
+# Code to Create Analysis
 
-[Link](url) and ![Image](src)
-```
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/jerryendrina/ST558-Project2/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+Just the exact code from `project2.Rmd`, I'm assuming...
