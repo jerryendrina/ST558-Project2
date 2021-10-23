@@ -18,6 +18,7 @@ In this project, we use several open-source packages:
 - `{kableExtra}`: Tables
 - `{scales}`: Number formatting for tables and plots
 - `{ggpubr}`: Correlation coefficient on plots
+- `{ggeasy}`: `{ggplot2}` helpers
 
 ## Links
 
