@@ -8,14 +8,14 @@ To answer these questions, we first explore the data through plots and summary t
 
 In this project, we use several open-source packages:
 
-- `rmarkdown`: In order to render new .Rmd files
-- `tidyverse`: Collection of data wrangling & visualization packages
-- `caret`: For model building
-- `knitr`:
-- `corrplot`: Correlation plot
-- `leaps`:
-- `here`: Access files from current working directory with `here::here()`
-- `kableExtra`: Tables
+- `{rmarkdown}`: In order to render new .Rmd files
+- `{tidyverse}`: Collection of data wrangling & visualization packages
+- `{caret}`: For model building
+- `{knitr}`:
+- `{corrplot}`: Correlation plot
+- `{leaps}`:
+- `{here}`: Access files from current working directory with `here::here()`
+- `{kableExtra}`: Tables
 
 # Links
 
