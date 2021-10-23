@@ -9,6 +9,8 @@ output:
     pandoc_args: --webtex
 params:  
     channel: "entertainment"
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE, message=FALSE, echo=FALSE}
@@ -22,43 +24,50 @@ library(caret)
 library(knitr)
 library(corrplot)
 library(leaps)
+library(here)
+library(kableExtra)
+library(scales)
+library(ggpubr)
+library(ggeasy)
 ```  
 
 # Introduction  
 
 ## Online News Popularity Data Set  
-With the unending developments of the internet, more and more people have access to online news articles. When people enjoys the article they read, they tend to share them through their social media accounts. Thus, the popularity of these articles can be associated to the number of times they are shared. In this project, we intend to find the best model that predicts the popularity of the online news using different techniques we learned in class.  
+
+With the unending developments of the internet, more and more people have access to online news articles. When people enjoy articles they read, they often share them through their social media accounts. Thus, the popularity of these articles can be associated to the number of times they are shared. In this project, we intend to find the best model that predicts the popularity of the online news using different techniques we learned in class.  
 
 The online news popularity data set that we will use is taken from the UCI Machine Learning Repository. The data comes from a popular online news [Mashable]('www.mashable.com'). There are 39644 articles, 58 predictive attributes, 2 non-predictive and 1 goal field.
 
 
 ## Descriptions of Variables  
+
 As mentioned, there are 58 predictors and 1 response variables in the data set. Thus, there is a need to select the most important predictor variables to reduce noise in the model. Ren and Young (2015) of Stanford University in their [report]('http://cs229.stanford.edu/proj2015/328_report.pdf') used different ways to reduce such variables. Fisher criterion determined the top 20 predictors. In this project, we are adapting their method and using the variables they found more discriminative, see figure below.  
 
 ```{r fscores, echo=FALSE}
 knitr::include_graphics("top20.png")
 ```   
 
-But since we are reporting by type of channel, then we can only use 16 perdictor variables for channel variables will become irrelevant. Below is the list of variables that we will use and their corresponding descriptions.  
+But since we are reporting by type of channel, we can only use 16 perdictor variables for channel variables will become irrelevant. Below is the list of variables that we will use and their corresponding descriptions.  
 
-1. kw_avg_avg: Avg. keyword (avg. shares)  
-2. LDA_02: Closeness to LDA topic 2  
-3. is_weekend: Was the article published on the weekend?  
-4. weekday_is_saturday: Was the article published on a Saturday?  
-5. LDA_04: Closeness to LDA topic 4  
-6. kw_max_avg: Avg. keyword (max. shares)  
-7. weekday_is_sunday: Was the article published on a Sunday?  
-8. LDA_00: Closeness to LDA topic 0  
-9. num_hrefs: Number of links  
-10. global_subjectivity: Text subjectivity  
-11. kw_min_avg: Avg. keyword (min. shares)  
-12. global_sentiment_polarity: Text sentiment polarity  
-13. rate_negative_words: Rate of negative words among non-neutral tokens  
-14. kw_min_min: Worst keyword (min. shares)  
-15. title_subjectivity: Title subjectivity  
-16. LDA_01: Closeness to LDA topic 1  
+1. `kw_avg_avg`: Avg. keyword (avg. shares)  
+2. `LDA_02`: Closeness to LDA topic 2  
+3. `is_weekend`: Was the article published on the weekend?  
+4. `weekday_is_saturday`: Was the article published on a Saturday?  
+5. `LDA_04`: Closeness to LDA topic 4  
+6. `kw_max_avg`: Avg. keyword (max. shares)  
+7. `weekday_is_sunday`: Was the article published on a Sunday?  
+8. `LDA_00`: Closeness to LDA topic 0  
+9. `num_hrefs`: Number of links  
+10. `global_subjectivity`: Text subjectivity  
+11. `kw_min_avg`: Avg. keyword (min. shares)  
+12. `global_sentiment_polarity`: Text sentiment polarity  
+13. `rate_negative_words`: Rate of negative words among non-neutral tokens  
+14. `kw_min_min`: Worst keyword (min. shares)  
+15. `title_subjectivity`: Title subjectivity  
+16. `LDA_01`: Closeness to LDA topic 1  
 
-The response variable that we will try to predict using predictibe models will be:
+The response variable that we will try to predict using predictive models will be:
 17. shares: Number of shares (target)  
 
 
@@ -68,18 +77,28 @@ In this project, we aim to find the best model among two linear regressions, ran
 
 
 # Data  
+
 ## Reading in the Data  
+
 ```{r warning=FALSE, message=FALSE}
-# read in data set
-data <- read_csv('OnlineNewsPopularity.csv') %>% dplyr::select(-c(url,timedelta))
+# read in data set (a raw version straight from Moodle, and one we will be 
+# manipulating)
+dataRaw <- read_csv(here('OnlineNewsPopularity.csv'))
+
+data <- read_csv(here('OnlineNewsPopularity.csv')) %>% 
+  dplyr::select(-c(url,timedelta))
 
 # subset data set by channel (in this case channel=entertainment)
 # when we change the channel parameter, this data set will also change
 chanVar <- as.name(paste0("data_channel_is_", params$channel))
-chanData <- data %>% filter((!!sym(chanVar)) == 1)
+
+chanData <- data %>% 
+  filter((!!sym(chanVar)) == 1)
 ```
 
+
 ## Filtering and Splitting Data
+
 ```{r}
 #set seed and variables to use
 set.seed(2)
@@ -91,8 +110,6 @@ chanData$weekday_is_saturday <- as.factor(paste0('class', chanData$weekday_is_sa
 chanData$weekday_is_sunday <- as.factor(paste0('class', chanData$weekday_is_sunday))
 chanData$is_weekend <- as.factor(paste0('class', chanData$is_weekend))
 
-
-
 #split data set
 index <- createDataPartition(chanData$shares, p=0.7, list=F)
 
@@ -100,66 +117,155 @@ train <- chanData[index, ]
 test <- chanData[-index, ]
 ```
 
+
 # Summarizations  
 
 ## Number of Channels
+
 In this portion, we will look at the number of different channels in the data set.
+
 ```{r}
 #generate data frame of channels and its frequency
-channels <- data[,c(12:17)]
-counts <- data.frame(Channel = c("Lifestyle","Entertainment","Business","Social Media",
-                                 "Technology", "World"), Frequency = colSums(channels))
+channels <- data[, c(12:17)]
+counts <- data.frame(Channel = c("Lifestyle", "Entertainment", "Business",
+                                 "Social Media", "Technology", "World"), 
+                     Frequency = colSums(channels))
 
 #generate a contingency table
 rownames(counts) <- NULL
-kable(counts)
+
+counts %>%
+  mutate(pct = Frequency / sum(Frequency),
+         pct = percent_format(accuracy = 1)(pct)) %>% 
+  arrange(desc(Frequency)) %>% 
+  kable(digits = 0) %>% 
+  kable_styling(full_width = FALSE)
 
 #generate a plot 
-ggplot(counts, aes(x=Channel, y=Frequency)) + geom_col(fill="light blue") + 
-  labs(title = "Distribution of Channels") + geom_text(aes(label=Frequency))
+counts %>% 
+  ggplot(counts, aes(x = Channel, y = Frequency)) +
+  geom_col(fill="light blue") + 
+  geom_text(aes(label = Frequency), nudge_y = 200) +
+  labs(title = "Distribution of Channels")
 ```
+
 We can see from both contingency table and bar plot that the World Channel has the highest number of articles while Lifestyle Channel has the lowest number of articles.
 
 
 ## Numeric Summaries
+
 We will only look at the five number summaries of the continuous predictors with the top 5 highest Fisher scores. We will also include the response variable `shares`.
+
 ```{r}
 sumVars <- c(5, 11, 12, 4, 9, 17)
+sumVarsName <- c("kw_avg_avg", "LDA_02", "LDA_04", "kw_max_avg", "LDA_00", "shares")
+
 kable(summary(train[,sumVars]))
 ```
+
 These summaries show measures of center (mean and median) and measures of spread (quantiles, min and max) for each variable.
 
+
 ## Correlations
+
 We can explore which variables are correlated to each other using the corrplot function. Categorical variables are not included in here.
+
 ```{r}
 correlation <- cor(train[, -c(6:8)])
 correlation %>% corrplot()
 ```
+
 Looking at the plot above, the size and color of the circle indicate how strong the correlation between two variables are. The darker the blue is, the more positively correlated they are. While the darker the red is, the more negatively correlated the variables will be.
 
-We can show scatterplots of some of the pairs of variables such as `kw_avg_avg: Avg. keyword (avg. shares)` & `kw_max_avg: Avg. keyword (max. shares)` and  `rate_negative_words: Rate of negative words among non-neutral tokens` & `global_sentiment_polarity: Text sentiment polarity`.  
-```{r}
-#generate scatterplot of `kw_avg_avg` & `kw_max_avg``
-cor1 <- round(cor(train$kw_avg_avg, train$kw_max_avg), 3)
-ggplot(train, aes(kw_avg_avg, kw_max_avg)) + geom_point(color="blue") +
-  geom_text(x = 20000, y=1e+05, label= paste0("Correlation=", cor1), color="red") +
-    labs(title="Avg. Keyword (avg. shares) vs Avg. Keyword (max. shares) Plot",
-       x="Avg. Keyword (avg. shares)", y="Avg. Keyword (max. shares)") 
+We can show scatterplots of some of the pairs of variables such as `kw_avg_avg: Avg. keyword (avg. shares)` & `kw_max_avg: Avg. keyword (max. shares)` and  `rate_negative_words: Rate of negative words among non-neutral tokens` & `global_sentiment_polarity: Text sentiment polarity`. These plots include all 6 channel categories. 
 
-#generate scatterplot of `rate_negative_words` & `global_sentiment_polarity`
-cor2 <- round(cor(train$rate_negative_words, train$global_sentiment_polarity), 3)
-ggplot(train, aes(rate_negative_words, global_sentiment_polarity)) + geom_point(color="blue") +
-  geom_text(x = 0.75, y=0.5, label= paste0("Correlation=", cor2), color="red") +
-    labs(title="Rate Negative Words vs Global Sentiment Polarity Plot",
+```{r}
+# scatterplot of `kw_avg_avg` & `kw_max_avg``
+train %>% 
+  ggplot(aes(kw_avg_avg, kw_max_avg)) +
+  geom_point(color="blue") +
+  stat_cor(color = "red") +
+  labs(title="Avg. Keyword (avg. shares) vs Avg. Keyword (max. shares) Plot",
+       x="Avg. Keyword (avg. shares)", y="Avg. Keyword (max. shares)")
+
+
+# scatterplot of `rate_negative_words` & `global_sentiment_polarity`
+train %>% 
+  ggplot(aes(rate_negative_words, global_sentiment_polarity)) +
+  geom_point(color="blue") +
+  stat_cor(color = "red") +
+  labs(title="Rate Negative Words vs Global Sentiment Polarity Plot",
        x="Rate Negative Words", y="Global Sentiment Polarity") 
 ```
 
 To Daniel: We can add more plots especially those related to shares. Also boxplots of shares vs weekday_is_saturday, weekday_is_sunday and is_weekend for these three are categorical variables. Let me know what you think.
 
+(DD): Agreed! Definitely need plots of explanatory variables vs shares, and
+boxplots by weekday would be great. Adding some of that here
+
+```{r}
+# distribution of shares
+train %>% 
+  ggplot(aes(shares)) +
+  geom_histogram() + 
+  labs(title = "Distribution of Article Shares",
+       x = "# Shares", y = "Count")
+```
+
+```{r}
+# distributions of all numeric inputs
+train %>% 
+  select_if(is.numeric) %>%
+  select(-shares) %>% 
+  pivot_longer(cols = num_hrefs:title_subjectivity,
+               names_to = "var",
+               values_to = "value") %>% 
+  ggplot(aes(value, fill = var)) +
+  geom_histogram() +
+  facet_wrap(~var, scales = "free") +
+  easy_remove_legend() +
+  labs(title = "Distributions of numeric predictor variables")
+```
+
+```{r}
+# scatterplots of shares vs each 5 variables (pivot_longer and then facet_wrap)
+
+# first, the two kw vars
+
+# then the three LDA vars
+
+# then {patchwork} them together
+
+train %>% 
+  select_if(is.numeric) %>%
+  pivot_longer(cols = num_hrefs:title_subjectivity,
+               names_to = "var",
+               values_to = "value") %>% 
+  filter(var %in% sumVarsName) %>% 
+  ggplot(aes(value, shares, color = var)) +
+  geom_point() +
+  facet_wrap(~var, scales = "free")
+```
+
+```{r}
+# boxplot of shares on different weekdays
+
+```
+
+(DD): We should also 
+
+```{r}
+
+```
+
 
 # Modeling
 
+(DD): short introduction on linear regression...
+
+
 ## Jerry's Linear Regression (I still need to improve this cause I only get 7% adjR^2 which is weird.)
+
 ```{r}
 #Jerry's linear regression modeling
 jerryFit <- lm(log(shares) ~ num_hrefs + kw_min_min + kw_min_avg + kw_max_avg +
@@ -174,7 +280,16 @@ jerryRMSE <- sqrt(mean((jerryPred-test$shares)^2))
 jerryRMSE
 ```
 
+
+## Daniel's Linear Regression
+
+```{r}
+
+```
+
+
 ## Random Forest Model (I still have to fix this. I'm still waiting for Dr.Post's answer.))
+
 ```{r}
 mod1 <- train(shares ~ ., data = train, method = "rf", 
               preProc = c("center", "scale"), 
@@ -192,7 +307,16 @@ round(postResample(pred = rfPred, obs = test$shares), 3)
 
 ```
 
+
+## Boosted tree model
+
+```{r}
+
+```
+
+
 # Linear Modeling through Backwards Selection
+
 ```{r}
 set.seed(10)
 ctrl <- rfeControl(functions = lmFuncs,
@@ -211,6 +335,23 @@ round(postResample(pred = lmPred, obs = test$shares), 3)
 ```
 
 # Comparison  
+
+
+
+# Automation
+
+(DD): We can keep all the code we've written above until I finish outlining
+the automation down here. I'll just write a function (or several) that take as 
+input a dataset containing one type of data channel. Then, we can map through the
+6 datasets, applying that function to produce written (and visual) output in
+separate .Rmd files for each of the 6 datasets. 
+
+```{r}
+
+```
+
+
+
 
 
 
