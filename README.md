@@ -19,7 +19,6 @@ In this project, we use several open-source packages:
 - `{scales}`: Number formatting for tables and plots
 - `{ggpubr}`: Correlation coefficient on plots
 - `{ggeasy}`: `{ggplot2}` helpers
-- `{patchwork}` Combine ggplot's
 
 ## Links
 
