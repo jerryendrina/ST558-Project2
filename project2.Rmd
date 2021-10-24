@@ -309,7 +309,7 @@ train %>%
 Since our goal is to create models for predicting the number of shares, then we can
 automate the process of selecting important variables that would generate the
 lowest RMSE using backwards selection and repeated cross validation of the `caret package`.  
-```{r lmBackwardSel,include=FALSE, warning=FALSE}
+```{r lmBackwardSel,include=FALSE, warning=FALSE, cache=TRUE}
 #set seed for reproducibility
 set.seed(10)
 
@@ -343,7 +343,7 @@ training and spitting out the mean of prediction of the individual trees.
 We will use the `caret` package in R to do all the process of [adaptive]('https://topepo.github.io/caret/adaptive-resampling.html') cross-validation
 and tuning for us.  
 
-```{r RandomForest, include=FALSE}
+```{r RandomForest, include=FALSE, cache=TRUE}
 #set seed for reproducibility
 set.seed(10)
 
