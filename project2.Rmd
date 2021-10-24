@@ -35,20 +35,26 @@ library(ggeasy)
 
 ## Online News Popularity Data Set  
 
-With the unending developments of the internet, more and more people have access to online news articles. When people enjoy articles they read, they often share them through their social media accounts. Thus, the popularity of these articles can be associated to the number of times they are shared. In this project, we intend to find the best model that predicts the popularity of the online news using different techniques we learned in class.  
+With the unending developments of the internet, more and more people have access to online news articles. And when people enjoy articles they read, they tend to share them through their social media accounts. Thus, the popularity of news articles can be associated to the number of times they are shared. In this project, we intend to find the best model that predicts the popularity of the online news from 6 different channels using various techniques we learned in class.  
 
-The online news popularity data set that we will use is taken from the UCI Machine Learning Repository. The data comes from a popular online news [Mashable]('www.mashable.com'). There are 39644 articles, 58 predictive attributes, 2 non-predictive and 1 goal field.
+The online news popularity data set that we will use is taken from the UCI Machine Learning Repository. The data comes from a popular online news [Mashable]('www.mashable.com'). There are 39644 articles, 58 predictive attributes, 2 non-predictive and 1 goal field in the data set.
 
 
 ## Descriptions of Variables  
 
-As mentioned, there are 58 predictors and 1 response variables in the data set. Thus, there is a need to select the most important predictor variables to reduce noise in the model. Ren and Young (2015) of Stanford University in their [report]('http://cs229.stanford.edu/proj2015/328_report.pdf') used different ways to reduce such variables. Fisher criterion determined the top 20 predictors. In this project, we are adapting their method and using the variables they found more discriminative, see figure below.  
+As mentioned, there are 58 predictors and 1 response variables in the data set. With this, we need to select the most important predictor variables to reduce noise in the model. Ren and Young (2015) from Stanford University in their [report]('http://cs229.stanford.edu/proj2015/328_report.pdf') used different ways to reduce such variables. They used Fisher criterion to determine the top 20 predictors. The Fisher score for the $j^{\text{th}}$ feature is given by:  
+
+$$F(j) =  \frac{(\bar{x}^1_j - \bar{x}^2_j)^2}{(s^1_j)^2 + (s^2_j)^2},$$  
+where  
+$$(s^k_j)^2 = \sum_{x \in X^k}(x_j - \bar{x}^k_j)^2$$  
+In this project, we are adapting their method and using the top 20 variables that they found more discriminative, see figure below.  
 
 ```{r fscores, echo=FALSE}
 knitr::include_graphics("top20.png")
 ```   
 
-But since we are reporting by type of channel, we can only use 16 perdictor variables for channel variables will become irrelevant. Below is the list of variables that we will use and their corresponding descriptions.  
+
+Since we are reporting by type of channel, we can only use 16 perdictor variables for channel variables in general will become irrelevant. Below is the list of variables that we will use and their corresponding descriptions.  
 
 1. `kw_avg_avg`: Avg. keyword (avg. shares)  
 2. `LDA_02`: Closeness to LDA topic 2  
@@ -68,12 +74,12 @@ But since we are reporting by type of channel, we can only use 16 perdictor vari
 16. `LDA_01`: Closeness to LDA topic 1  
 
 The response variable that we will try to predict using predictive models will be:
-17. shares: Number of shares (target)  
+17. shares: Number of shares
 
 
 ## Purpose and Methods  
 
-In this project, we aim to find the best model among two linear regressions, random forest and  boosted tree model. Cross validation will be used in choosing the best model with the optimal tuning parameters. Lastly, all four models will be compared on the test set based on misclassification and accuracy rates.  
+In this project, we aim to find the best model among two linear regressions, random forest and  boosted tree models. Cross validation will be used in choosing the best model with the optimal tuning parameters. Lastly, all four models will be compared on the test set based on misclassification and accuracy rates.  
 
 
 # Data  
@@ -149,8 +155,7 @@ counts %>%
   labs(title = "Distribution of Channels")
 ```
 
-We can see from both contingency table and bar plot that the World Channel has the highest number of articles while Lifestyle Channel has the lowest number of articles.
-
+We can see from both contingency table and bar plot that the World Channel has the highest number of articles while Lifestyle Channel has the lowest number of articles in this data set.  
 
 ## Numeric Summaries
 
@@ -215,7 +220,7 @@ train %>%
   ggplot(aes(shares)) +
   geom_histogram(bins = 30) +
   labs(title = "Distribution of Article Shares",
-       x = "# Shares", y = "Count")
+       x = "# of Shares", y = "Count")
 ```
 
 So we learn here that there are a few articles that get shared a ton (hundreds
@@ -300,20 +305,24 @@ train %>%
 (DD): short introduction on linear regression...
 
 
-## Jerry's Linear Regression (I still need to improve this cause I only get 7% adjR^2 which is weird.)
+## Linear Regression Model using Backwards Selection  
+Since our goal is to create models for predicting the number of shares, then we can
+automate the process of selecting important variables that would generate the
+lowest RMSE using backwards selection and repeated cross validation of the `caret package`.  
+```{r lmBackwardSel,include=FALSE, warning=FALSE}
+#set seed for reproducibility
+set.seed(10)
 
-```{r}
-#Jerry's linear regression modeling
-jerryFit <- lm(log(shares) ~ num_hrefs + kw_min_min + kw_min_avg + kw_max_avg +
-            kw_avg_avg + weekday_is_saturday + weekday_is_sunday +
-            global_subjectivity + rate_negative_words , data=chanData)
-summary(jerryFit)
-plot(jerryFit)
+#set options for type of modeling and cross validation
+ctrl <- rfeControl(functions = lmFuncs, method = "repeatedcv", 
+                   repeats = 5, verbose = FALSE)
+
+fitBWSel <- rfe(shares ~ ., preProc = c("center", "scale"), sizes = c(1:17),
+                 rfeControl = ctrl, data=train)
 
 #calculate RMSE
-jerryPred <- predict(jerryFit, newdata = test)
-jerryRMSE <- sqrt(mean((jerryPred-test$shares)^2))
-jerryRMSE
+predBWSel <- predict(fitBWSel, newdata = test)
+rmseBWSel <- round(sqrt(mean((predBWSel-test$shares)^2)), 3)
 ```
 
 
@@ -324,53 +333,49 @@ jerryRMSE
 ```
 
 
-## Random Forest Model (I still have to fix this. I'm still waiting for Dr.Post's answer.))
+## Random Forest Model
+We can also fit an ensemble tree-based random forest in our training data in order
+to try and predict the number of shares of a particular article. A random forest
+is a supervised learning algorithm that makes use of an ensemble method to solve
+regression or classification problems. In this project, we are dealing with
+a regression problem. The method works by creating a large number of decision trees on
+training and spitting out the mean of prediction of the individual trees.
+We will use the `caret` package in R to do all the process of [adaptive]('https://topepo.github.io/caret/adaptive-resampling.html') cross-validation
+and tuning for us.  
 
-```{r, include=FALSE}
-mod1 <- train(shares ~ ., data = train, method = "rf", 
-              preProc = c("center", "scale"), 
-              trControl = trainControl(method = "adaptive_cv", classProbs = TRUE, 
-                                       verboseIter = TRUE, 
-                                       adaptive = list(min = 5, alpha = 0.05, method = "BT",
-                                                       complete = TRUE)))
+```{r RandomForest, include=FALSE}
+#set seed for reproducibility
+set.seed(10)
 
-mod1
+##set options for type of modeling and cross validation
+ctrl <- trainControl(method= "adaptive_cv", classProbs = T, verboseIter = T, 
+                     adaptive = list(min = 5, alpha = 0.05, method = "gls", complete=T))
+
+rfModel <- train(shares ~ ., data = train, method = "rf", preProc = c("center", "scale"), 
+              trControl = ctrl)
 
 #calculate RMSE
-rfPred <- predict(mod1, newdata = test)
-round(postResample(pred = rfPred, obs = test$shares), 3)
-
-
+rfPred <- predict(rfModel, newdata = test)
+rmseRF <- round(postResample(pred = rfPred, obs = test$shares), 3)
 ```
 
 
-## Boosted tree model
-
+## Boosted Tree Model
 ```{r}
 
 ```
 
 
-# Linear Modeling through Backwards Selection
-
-```{r, include=FALSE}
-set.seed(10)
-ctrl <- rfeControl(functions = lmFuncs,
-                   method = "repeatedcv",
-                   repeats = 5,
-                   verbose = FALSE)
-
-lmProfile <- rfe(shares ~ ., preProc = c("center", "scale"),
-                 sizes = c(1:17),
-                 rfeControl = ctrl, data=train)
-
-lmProfile$results
-
-#calculate RMSE
-round(postResample(pred = lmPred, obs = test$shares), 3)
-```
 
 # Comparison  
+Now that we have created four models that try to predict the number of shares for a particular news article, we can then compare how each of these models perform with our test set in terms of their RMSE.
+```{r RMSETable, echo=FALSE}
+rmseTable <- rbind.data.frame("LM Backward Sel."= rmseBWSel, 
+                              "Random Forest" = rmseRF[1])
+colnames(rmseTable) <- "RMSE"
+rownames(rmseTable) <- c("LM Backward Sel.", "Random Forest")
+kable(rmseTable, caption = "Comparison of Models' RMSE")
+```  
 
 
 
