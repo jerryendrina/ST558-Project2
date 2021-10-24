@@ -157,16 +157,22 @@ We can see from both contingency table and bar plot that the World Channel has t
 We will only look at the five number summaries of the continuous predictors with the top 5 highest Fisher scores. We will also include the response variable `shares`.
 
 ```{r}
-sumVars <- c(5, 11, 12, 4, 9, 17)
-sumVarsName <- c("kw_avg_avg", "LDA_02", "LDA_04", "kw_max_avg", "LDA_00", "shares")
+topVars <- c(5, 11, 12, 4, 9, 17)
+topVarsName <- c("kw_avg_avg", "LDA_02", "LDA_04", "kw_max_avg", "LDA_00", "shares")
 
-kable(summary(train[,sumVars]))
+train[, topVars] %>% 
+  summary() %>% 
+  as_tibble()
+  kable(digits = 2) %>% 
+  kable_styling(full_width = FALSE)
+
+kable(summary(train[,topVars]))
 ```
 
 These summaries show measures of center (mean and median) and measures of spread (quantiles, min and max) for each variable.
 
 
-## Correlations
+## Plots
 
 We can explore which variables are correlated to each other using the corrplot function. Categorical variables are not included in here.
 
@@ -207,10 +213,39 @@ boxplots by weekday would be great. Adding some of that here
 # distribution of shares
 train %>% 
   ggplot(aes(shares)) +
-  geom_histogram() + 
+  geom_histogram(bins = 30) +
   labs(title = "Distribution of Article Shares",
        x = "# Shares", y = "Count")
 ```
+
+So we learn here that there are a few articles that get shared a ton (hundreds
+of thousands of times), but that lots of articles don't get shared at all. Now,
+we'll take a took at articles that get shared the most, along with a zoomed-in
+look at the distribution near 0.
+
+```{r}
+train %>% 
+  arrange(desc(shares)) %>% 
+  select(shares) %>% 
+  mutate(rank = row_number(), .before = shares) %>% 
+  slice(1:20) %>% 
+  kable() %>% 
+  kable_styling(full_width = FALSE)
+```
+
+```{r}
+train %>% 
+  ggplot(aes(shares)) +
+  geom_histogram(bins = 30) +
+  scale_x_continuous(breaks = seq(0, 30000, 3000), limits = c(0, 30000)) +
+  labs(title = "Distribution of Article Shares",
+       x = "# Shares", y = "Count")
+```
+
+A few articles got shared 100,000+ times, but we see the list quickly drop off. 
+It's a very skewed distribution, which could make it tricky to model -- with so
+many articles having a similarly low share count, it could be tough to 
+differentiate between them and predict `shares` well.
 
 ```{r}
 # distributions of all numeric inputs
@@ -228,34 +263,35 @@ train %>%
 ```
 
 ```{r}
-# scatterplots of shares vs each 5 variables (pivot_longer and then facet_wrap)
-
-# first, the two kw vars
-
-# then the three LDA vars
-
-# then {patchwork} them together
-
+# scatterplot of shares vs each 5 variables (pivot_longer and then facet_wrap)
 train %>% 
   select_if(is.numeric) %>%
   pivot_longer(cols = num_hrefs:title_subjectivity,
                names_to = "var",
                values_to = "value") %>% 
-  filter(var %in% sumVarsName) %>% 
+  filter(var %in% topVarsName) %>% 
   ggplot(aes(value, shares, color = var)) +
   geom_point() +
-  facet_wrap(~var, scales = "free")
+  facet_wrap(~var, scales = "free_x") +
+  scale_x_continuous(labels = comma_format()) +
+  scale_y_continuous(labels = comma_format()) +
+  easy_remove_legend() +
+  labs(title = "# Shares vs the Top 5 Predictor Variables",
+       x = "Value", y = "# Shares")
 ```
+
+And finally, we take a look at `shares` on different days of the week.
+
+(DD) TODO: Make a new variable that's either Sat, Sun, or Mon-Fri, and then
+display boxplots of log(shares) since large positive outliers
 
 ```{r}
 # boxplot of shares on different weekdays
-
-```
-
-(DD): We should also 
-
-```{r}
-
+train %>%
+  mutate(day_of_week = case_when())
+  mutate(is_weekend = str_remove_all(is_weekend, "class")) %>% 
+  ggplot(aes(is_weekend, shares)) +
+  geom_boxplot()
 ```
 
 
@@ -290,7 +326,7 @@ jerryRMSE
 
 ## Random Forest Model (I still have to fix this. I'm still waiting for Dr.Post's answer.))
 
-```{r}
+```{r, include=FALSE}
 mod1 <- train(shares ~ ., data = train, method = "rf", 
               preProc = c("center", "scale"), 
               trControl = trainControl(method = "adaptive_cv", classProbs = TRUE, 
@@ -317,7 +353,7 @@ round(postResample(pred = rfPred, obs = test$shares), 3)
 
 # Linear Modeling through Backwards Selection
 
-```{r}
+```{r, include=FALSE}
 set.seed(10)
 ctrl <- rfeControl(functions = lmFuncs,
                    method = "repeatedcv",
