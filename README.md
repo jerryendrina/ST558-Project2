@@ -1,4 +1,4 @@
-### Online News Popularity Predictive Modeling
+### News Popularity Predictive Modeling
 
 ### Purpose
 
