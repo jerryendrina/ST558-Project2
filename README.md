@@ -13,14 +13,14 @@ In this project, we use several open-source packages:
 - `{rmarkdown}`: Render new .Rmd files
 - `{tidyverse}`: Collection of data wrangling & visualization packages
 - `{caret}`: For model building
-- `{knitr}`:
+- `{knitr}`: Knit R Markdown files
 - `{corrplot}`: Correlation plot
-- `{leaps}`:
 - `{here}`: Access files from current working directory with `here::here()`
 - `{kableExtra}`: Tables
 - `{scales}`: Number formatting for tables and plots
 - `{ggpubr}`: Correlation coefficient on plots
 - `{ggeasy}`: `{ggplot2}` helpers
+- `{gbm}`: Boosted tree model
 
 ## Links
 
