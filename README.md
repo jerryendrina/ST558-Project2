@@ -26,12 +26,12 @@ In this project, we use several open-source packages:
 
 Links to the six analyses (one for each news/channel category) are below:
 
-- [Lifestyle](analysis-lifestyle.md)
-- [Entertainment](analysis-entertainment.md)
-- [Business](analysis-bus.md)
-- [Social Media](analysis-socmed.md)
-- [Technology](analysis-tech.md)
-- [World](analysis-world.md)
+- [Lifestyle](analysis-lifestyle.html)
+- [Entertainment](analysis-entertainment.html)
+- [Business](analysis-bus.html)
+- [Social Media](analysis-socmed.html)
+- [Technology](analysis-tech.html)
+- [World](analysis-world.html)
 
 ## Code to Create Analyses
 
