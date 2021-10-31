@@ -1,3 +1,5 @@
+## ST558 Project 2 by Delaney and Endrina
+
 ## Purpose
 
 In this repo, we analyze the rate at which certain news articles are shared, attempting to learn more about why some articles are shared more than others. We were especially interested in how this differed across six news categories: Lifestyle, Entertainment, Business, Social Media, Techonology, and World. 
