@@ -1,12 +1,12 @@
-### News Popularity Predictive Modeling
+## News Popularity Predictive Modeling
 
-### Purpose
+## Purpose
 
 In this repo, we analyze the rate at which certain news articles are shared, attempting to learn more about why some articles are shared more than others. We were especially interested in how this differed across six news categories: Lifestyle, Entertainment, Business, Social Media, Techonology, and World. 
 
 To answer these questions, we first explore the data through plots and summary tables. Then, we build linear regression, random forest, and boosted tree models that predict how many times an article got shared based on 16 different inputs. Through these models, we learn how well the number of shares can be predicted, as well as which inputs lead to more shares.
 
-### R Packages
+## R Packages
 
 In this project, we use several open-source packages:
 
@@ -22,7 +22,7 @@ In this project, we use several open-source packages:
 - `{ggpubr}`: Correlation coefficient on plots
 - `{ggeasy}`: `{ggplot2}` helpers
 
-### Links
+## Links
 
 Links to the six analyses (one for each news/channel category) are below:
 
@@ -33,7 +33,7 @@ Links to the six analyses (one for each news/channel category) are below:
 - [Technology](analysis-tech.html)
 - [World](analysis-world.html)
 
-### Code to Create Analyses
+## Code to Create Analyses
 
 To output the six analyses, we run a loop that works off of the base .Rmd file, `project2.Rmd`, and outputs an analysis for a specific channel using an R Markdown parameter.
 
