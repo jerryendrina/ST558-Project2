@@ -26,29 +26,25 @@ In this project, we use several open-source packages:
 
 Links to the six analyses (one for each news/channel category) are below:
 
-- [Lifestyle](analysis-lifestyle.html)
-- [Entertainment](analysis-entertainment.html)
-- [Business](analysis-bus.html)
-- [Social Media](analysis-socmed.html)
-- [Technology](analysis-tech.html)
-- [World](analysis-world.html)
+- [Lifestyle](analysis-lifestyle.md)
+- [Entertainment](analysis-entertainment.md)
+- [Business](analysis-bus.md)
+- [Social Media](analysis-socmed.md)
+- [Technology](analysis-tech.md)
+- [World](analysis-world.md)
 
 ## Code to Create Analyses
 
 To output the six analyses, we run a loop that works off of the base .Rmd file, `project2.Rmd`, and outputs an analysis for a specific channel using an R Markdown parameter.
 
 ```
-# define the 6 channel types -- will then loop through the base .Rmd script,
-# one time for each channel (define as param in yaml)
+# define the 6 channel types, then loop through the base .Rmd script (one time for each channel)
 
 chans <- c("lifestyle", "entertainment", "bus", "socmed", "tech", "world")
 
-# NOTE: in main file, will need to add paste0("data_channel_is_", chan) in
-# order to reference the actual column
-
 for (chan in chans) {
   rmarkdown::render(input = "project2.Rmd",
-                    output_file = paste0("analysis-", chan, ".html"),
+                    output_file = paste0("analysis-", chan, ".md"),
                     params = list(chan = chan))
 }
 ```
