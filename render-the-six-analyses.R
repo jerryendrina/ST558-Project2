@@ -1,6 +1,4 @@
 
-library(here)
-
 # define the 6 channel types -- will then loop through the base .Rmd script,
 # one time for each channel (define as param in yaml)
 

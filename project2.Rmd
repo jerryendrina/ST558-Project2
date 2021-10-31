@@ -7,6 +7,7 @@ output:
     toc: true
     toc_depth: 1
     pandoc_args: --webtex
+always_allow_html: true
 params:  
     chan: "lifestyle"
 editor_options: 
@@ -15,7 +16,16 @@ editor_options:
     wrap: 72
 ---
 
-```{r setup, include=FALSE, message=FALSE, echo=FALSE}
+```{r, echo=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+# Introduction
+
+Before starting, we'll read in the libraries used in this analysis and create
+a few new variables based on the R Markdown channel parameter.
+
+```{r setup}
 # set seed for reproducibility
 set.seed(558)
 
@@ -25,12 +35,12 @@ library(tidyverse)
 library(caret)
 library(knitr)
 library(corrplot)
-library(leaps)
 library(here)
 library(kableExtra)
 library(scales)
 library(ggpubr)
 library(ggeasy)
+library(gbm)
 ```
 
 ```{r}
@@ -51,8 +61,6 @@ if (params$chan %in% c("lifestyle", "entertainment", "world")) {
   chanTitle <- "Technology"
 }
 ```
-
-# Introduction
 
 ## Online News Popularity Data Set
 
@@ -206,7 +214,7 @@ channel for this analysis (i.e. Lifestyle, Business, etc).*
 Below are the 5-number summaries of the continuous predictors with the
 top 5 highest Fisher scores, as well as the response variable `shares`.
 
-```{r, eval=FALSE, include=FALSE}
+```{r}
 topVars <- c(5, 4, 9, 11, 12, 17)
 topVarsName <- c("kw_avg_avg", "kw_max_avg", "LDA_00", "LDA_02", "LDA_04", "shares")
 
@@ -354,7 +362,7 @@ linear relationship between a set of explanatory variables (in our example, the
 16 outlined in the introduction) and a response variable (`shares`). Because
 the statistical model behind linear regression is explicitly defined (unlike many
 more "black-box" machine learning methods), we can learn a lot about the inputs, like
-their relative significances and confidence intervals.
+their relative significances and coefficient confidence intervals.
 
 There are a few key assumptions to linear regression models that limit their
 flexibility, but again allow us to learn quite a bit about the exact relationships
@@ -368,9 +376,9 @@ between predictors and response. These include:
 
 First, we'll run a multiple linear regression model without any kind of 
 variable selection -- the 16 variables defined as important at the beginning
-will be the inputs in the final model.
+will all be used as inputs in the final model.
 
-```{r}
+```{r, cache=TRUE}
 # for reproducibility
 set.seed(10)
 
@@ -381,8 +389,8 @@ fitMLR <- train(shares ~ .,
                 trControl = trainControl(method = "cv", number = 5))
 
 #calculate RMSE
-MLRPred <- predict(fitMLR, newdata = test)
-rmseMLR <- round(postResample(pred = MLRPred, obs = test$shares), 3)
+predMLR <- predict(fitMLR, newdata = test)
+rmseMLR <- round(postResample(pred = predMLR, obs = test$shares), 3)[1]
 ```
 
 ### Using Backwards Selection
@@ -391,16 +399,21 @@ Then, we can automate the process of selecting important variables that
 would generate the lowest RMSE using backwards selection and repeated
 cross validation of the `{caret}`.
 
-```{r lmBackwardSel,include=FALSE, warning=FALSE, cache=TRUE}
+```{r lmBackwardSel, cache=TRUE}
 # set seed for reproducibility
 set.seed(10)
 
 # set options for type of modeling and cross validation
-ctrl <- rfeControl(functions = lmFuncs, method = "repeatedcv", 
-                   repeats = 5, verbose = FALSE)
+ctrl <- rfeControl(functions = lmFuncs, 
+                   method = "repeatedcv", 
+                   repeats = 5, 
+                   verbose = FALSE)
 
-fitBWSel <- rfe(shares ~ ., preProc = c("center", "scale"), sizes = c(1:17),
-                 rfeControl = ctrl, data=train)
+fitBWSel <- rfe(shares ~ ., 
+                preProc = c("center", "scale"), 
+                sizes = c(1:17),
+                rfeControl = ctrl, 
+                data=train)
 
 # calculate RMSE
 predBWSel <- predict(fitBWSel, newdata = test)
@@ -420,29 +433,48 @@ use the `caret` package in R to do all the process of
 [adaptive]('https://topepo.github.io/caret/adaptive-resampling.html')
 cross-validation and tuning for us.
 
-```{r RandomForest, include=FALSE, cache=TRUE}
+```{r RandomForest, cache=TRUE, results='hide'}
 # for reproducibility
 set.seed(10)
 
 ##set options for type of modeling and cross validation
-ctrl <- trainControl(method= "adaptive_cv", classProbs = T, verboseIter = T, 
+ctrl <- trainControl(method= "adaptive_cv", 
+                     classProbs = T, 
+                     verboseIter = T, 
                      adaptive = list(min = 5, alpha = 0.05, method = "gls", complete=T))
 
-rfModel <- train(shares ~ ., data = train, method = "rf", preProc = c("center", "scale"), 
-              trControl = ctrl)
+fitRF <- train(shares ~ ., 
+               data = train, 
+               method = "rf", 
+               preProc = c("center", "scale"), 
+               trControl = ctrl)
 
 #calculate RMSE
-rfPred <- predict(rfModel, newdata = test)
-rmseRF <- round(postResample(pred = rfPred, obs = test$shares), 3)
+predRF <- predict(fitRF, newdata = test)
+rmseRF <- round(postResample(pred = predRF, obs = test$shares), 3)[1]
 ```
 
 ## Boosted Tree Model
 
-Lastly, we'll fit a boosted tree model. (TODO: explain model, write code for it)
+Lastly, we'll fit a boosted tree model. Like a random forest, this is a tree-based
+model -- it differs, however, in that trees are grown sequentially, using
+information about the previous tree's performance to update the new one. This
+method is more computationally expensive than a random forest, but can often
+lead to better predictions. Unlike linear regression, the results from a boosted
+tree model are not very interpretable (though predictions are often strong).
 
-```{r}
+```{r cache=TRUE, results='hide'}
 # for reproducibility
 set.seed(10)
+
+# fit model, get rmse
+fitBT <- train(shares ~ .,
+               data = train,
+               method = "gbm",
+               trControl = trainControl(method = "cv", number = 5))
+
+predBT <- predict(fitBT, newdata = test)
+rmseBT <- round(postResample(pred = predBT, obs = test$shares), 3)[1]
 ```
 
 # Comparison
@@ -452,12 +484,18 @@ shares for a particular news article, we can then compare how each of
 these models perform with our test set in terms of their RMSE.
 
 ```{r RMSETable, echo=FALSE}
-rmseTable <- rbind.data.frame("Multiple Linear Reg."= rmseMLR[1],
-                              "LM Backward Sel."= rmseBWSel, 
-                              "Random Forest" = rmseRF[1])
-colnames(rmseTable) <- "RMSE"
-rownames(rmseTable) <- c("Multiple Linear Reg.", "LM Backward Sel.", "Random Forest")
-kable(rmseTable, caption = "Comparison of Models' RMSE")
+rmseTable <- tribble(
+  ~Model, ~RMSE,
+  "MLR", rmseMLR,
+  "MLR w/ Backwards Selection", rmseBWSel,
+  "Random Forest", rmseRF,
+  "Boosted Tree", rmseBT
+)
+
+rmseTable %>% 
+  arrange(RMSE) %>% 
+  kable(caption = str_c("Comparison of Models' RMSE, ", chanTitle, " channel")) %>% 
+  kable_styling(full_width = FALSE)
 ```
 
 After evaluating prediction performance of each model to the test set,
