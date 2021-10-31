@@ -9,6 +9,6 @@ chans <- c("lifestyle", "entertainment", "bus", "socmed", "tech", "world")
 
 for (chan in chans) {
   rmarkdown::render(input = "project2.Rmd",
-                    output_file = paste0("analysis-", chan, ".html"),
+                    output_file = paste0("analysis-", chan, ".md"),
                     params = list(chan = chan))
 }
