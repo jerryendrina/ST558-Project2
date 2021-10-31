@@ -1,4 +1,4 @@
-## ST558 Project 2 by Delaney and Endrina
+## Predictive Modeling of Online News Popularity
 
 ## Purpose
 
